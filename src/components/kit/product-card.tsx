@@ -3,24 +3,54 @@ import { Package } from 'lucide-react'
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
+import { Image } from './image'
+
 interface Product {
-  id: number
+  id: string
   name: string
   description: string
+  imageUrl: string
   price: number
+  promotionalPrice: null
+  promotionStartsAt: null
+  promotionEndsAt: null
   stock: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 interface ProductCardProps {
   product: Product
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  const formattedPrice = new Intl.NumberFormat('pt-BR', {
+const formatPrice = (priceInCents: number) => {
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     minimumFractionDigits: 2,
-  }).format(product.price / 100)
+  }).format(priceInCents / 100)
+}
+
+const getValidPrice = (product: Product) => {
+  if (!product.promotionalPrice) {
+    return product.price
+  }
+
+  if (!product.promotionStartsAt || !product.promotionEndsAt) {
+    return product.price
+  }
+
+  const now = new Date()
+
+  if (now >= new Date(product.promotionStartsAt) && now <= new Date(product.promotionEndsAt)) {
+    return product.promotionalPrice
+  }
+
+  return product.price
+}
+
+export function ProductCard({ product }: ProductCardProps) {
+  const formattedPrice = formatPrice(getValidPrice(product))
 
   const isLowStock = product.stock < 10
 
@@ -32,9 +62,14 @@ export function ProductCard({ product }: ProductCardProps) {
             <CardTitle className="mb-2 text-xl">{product.name}</CardTitle>
             <CardDescription className="line-clamp-2">{product.description}</CardDescription>
           </div>
-          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-secondary">
+
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-12 h-12 object-cover rounded-lg bg-secondary items-center justify-center flex"
+          >
             <Package className="w-6 h-6 text-muted-foreground" />
-          </div>
+          </Image>
         </div>
       </CardHeader>
 
